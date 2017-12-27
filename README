@@ -1,0 +1,5 @@
+与gateway之间通信使用官方标准的json格式；
+
+使用方法：
+在ubuntu下直接make编译，需要依赖mysql
+make
