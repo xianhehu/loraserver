@@ -18,7 +18,7 @@ static int hashmap_grow(struct hashmap *map)
     size_t i;
 
     /* first, allocate more room for the table */
-    struct hash_node **newtable = realloc(map->table, map->len * 2 *
+    struct hash_node **newtable = (struct hash_node**)realloc(map->table, map->len * 2 *
                           sizeof(struct hash_node *));
     if (newtable == NULL)
         return -1;
@@ -67,7 +67,7 @@ static int hashmap_shrink(struct hashmap *map)
         }
     }
     /* then, release unneeded memory */
-    struct hash_node **newtable = realloc(map->table, map->len *
+    struct hash_node **newtable = (struct hash_node **)realloc(map->table, map->len *
                           sizeof(struct hash_node *));
     if (newtable == NULL)
         return -1;
@@ -78,7 +78,7 @@ static int hashmap_shrink(struct hashmap *map)
 void hashmap_init(struct hashmap *map, hash_func_t hash, cmp_func_t cmp)
 {
     map->len = MIN_SLOTS;
-    map->table = calloc(map->len, sizeof(struct hash_node *));
+    map->table = (struct hash_node **)calloc(map->len, sizeof(struct hash_node *));
     map->count = 0;
     map->hash = hash;
     map->cmp = cmp;

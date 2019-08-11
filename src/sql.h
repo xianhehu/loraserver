@@ -34,6 +34,7 @@ SQL_ROW *sqlfmt(SQL_CTX *, char *, size_t, char *, ...);
 char *get_column(SQL_ROW *, char *);
 void print_rows(SQL_ROW *);
 void sqldb_free_rows(SQL_ROW *);
+bool connectdb(SQL_CTX *sqldb);
 
 #endif
 

@@ -51,5 +51,7 @@ typedef struct {
     void *msg;
 } mp_msg_t;
 
+void LoRaMacJoinEncrypt( uint8_t *buffer, uint16_t size, const uint8_t *key, uint8_t *decBuffer );
+
 #endif
 

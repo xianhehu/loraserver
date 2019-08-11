@@ -17,10 +17,10 @@ INCLUDES = $(./*.h)
 
 ### Constant symbols
 
-CC := $(CROSS_COMPILE)gcc
+CC := $(CROSS_COMPILE)g++
 AR := $(CROSS_COMPILE)ar
 
-CFLAGS := -O2 -Wall -Wextra -std=gnu99 -Iinc -I.
+CFLAGS := -O2 -Wall -Wextra -std=gnu++11 -Iinc -I. -I/usr/include/c++/5/
 VFLAG := -D VERSION_STRING="\"$(RELEASE_VERSION)\""
 
 ### Constants for Lora concentrator HAL library
@@ -40,7 +40,7 @@ $LIB_PATH_INC += $(LIB_PATH)/hashmap
 
 ### Linking options
 
-LIBS := -lrt -lpthread -lm -lmysqlclient
+LIBS := -lrt -lpthread -lm -lmysqlclient -llog4cplus
 
 ### General build targets
 

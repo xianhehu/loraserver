@@ -365,10 +365,12 @@ void CLOUD_HandleModuData(cloud_msg_t *d)
     if (cJSON_HasObjectItem(d->msg,"MoteDLData")) {
         jd=cJSON_GetObjectItem(d->msg, "MoteDLData");
     }
+
     if (jd==NULL) {
         log(LOG_ERR, "json have no mote data");
         return;
     }
+
     /* check wether information is complete */
     if (!cJSON_HasObjectItem(jd, "DevEUI") || !cJSON_HasObjectItem(jd, "FPort") || !cJSON_HasObjectItem(jd, "DataLen")
         || !cJSON_HasObjectItem(jd, "AppData")) {
@@ -415,6 +417,9 @@ void CLOUD_HandleDlMsg(int s, cloud_msg_t * d)
         case 2:
             CLOUD_HandleModuData(d);
             break;
+		case 5:
+			log(LOG_DEBUG, "connect appserver success!");
+			break;
         case 7:
             CLOUD_HandleModuInfoResp(d);
             break;
@@ -428,7 +433,7 @@ void CLOUD_HandleDlMsg(int s, cloud_msg_t * d)
             CLOUD_HandleGwInfoPush(s, d);
             break;
         default:
-            log(LOG_ERR, "unkown type %d", d->head.type);
+            log(LOG_ERR, "unknown type %d", d->head.type);
             break;
     }
 }
@@ -455,7 +460,7 @@ void CLOUD_UpdateLink(int s)
 
     CLOUD_Send(s, (uint8_t *)msg2c, len+CLOUD_MSG_HEAD_LEN);
 
-    dump((const char *)msg2c, len+CLOUD_MSG_HEAD_LEN);
+    dump((uint8_t *)msg2c, len+CLOUD_MSG_HEAD_LEN);
 
     log(LOG_NORMAL, "send to cloud:");
     log(LOG_NORMAL, (const char *)str);
@@ -519,7 +524,7 @@ void CLOUD_HandleGwStat(int s, gw_msg_t *msg)
 {
     cJSON *ulmsg=cJSON_CreateObject();
     cJSON *state=cJSON_CreateObject();
-    gw_stat_t *gs=msg->msg;
+    gw_stat_t *gs=(gw_stat_t *)msg->msg;
     cJSON_AddNumberToObject(state, "GwID",msg->gwid);
     cJSON_AddStringToObject   (state, "Time",  gs->time);
     cJSON_AddNumberToObject(state, "Lati",    gs->pos->lati);
@@ -600,7 +605,7 @@ void CLOUD_HandleMoteUlData(int s, cloud_modu_ul_t *msg)
     msg2c->len=hton2(len);
     memcpy((uint8_t *)msg2c+CLOUD_MSG_HEAD_LEN, str, len);
 
-    CLOUD_Send(s, msg2c, len+CLOUD_MSG_HEAD_LEN);
+    CLOUD_Send(s, (uint8_t *)msg2c, len+CLOUD_MSG_HEAD_LEN);
 
     log(LOG_NORMAL, "send to cloud:");
     log(LOG_NORMAL, (const char *)str);
@@ -629,7 +634,7 @@ void CLOUD_HandleGwInfoReq(int s, cloud_gw_info_req_t *req)
     msg2c->len=hton2(len);
     memcpy((uint8_t *)msg2c+CLOUD_MSG_HEAD_LEN, str, len);
 
-    CLOUD_Send(s, msg2c, len+CLOUD_MSG_HEAD_LEN);
+    CLOUD_Send(s, (uint8_t *)msg2c, len+CLOUD_MSG_HEAD_LEN);
 
     log(LOG_NORMAL, "send to cloud:");
     log(LOG_NORMAL, (const char *)str);
@@ -658,7 +663,7 @@ void CLOUD_HandleMoteInfoReq(int s, cloud_mote_info_req_t *req)
     msg2c->len=hton2(len);
     memcpy((uint8_t *)msg2c+CLOUD_MSG_HEAD_LEN, str, len);
 
-    CLOUD_Send(s, msg2c, len+CLOUD_MSG_HEAD_LEN);
+    CLOUD_Send(s, (uint8_t *)msg2c, len+CLOUD_MSG_HEAD_LEN);
 
     log(LOG_NORMAL, "send to cloud:");
     log(LOG_NORMAL, (const char *)str);
@@ -672,17 +677,20 @@ void *CLOUD_HandleUlMsg(int s, cloud_msg_ul_t *msg)
     log(LOG_DEBUG, "handle %d message %p", msg->type, msg);
     switch(msg->type) {
         case 0:
-            CLOUD_HandleGwStat(s, msg->msg);
+            CLOUD_HandleGwStat(s, (gw_msg_t *)msg->msg);
             break;
         case 1:
-            CLOUD_HandleMoteUlData(s, msg->msg);
+            CLOUD_HandleMoteUlData(s, (cloud_modu_ul_t *)msg->msg);
             break;
         case 2:
-            CLOUD_HandleGwInfoReq(s, msg->msg);
+            CLOUD_HandleGwInfoReq(s, (cloud_gw_info_req_t *)msg->msg);
             break;
         case 3:
-            CLOUD_HandleMoteInfoReq(s, msg->msg);
+            CLOUD_HandleMoteInfoReq(s, (cloud_mote_info_req_t *)msg->msg);
             break;
+		case 5:
+			log(LOG_DEBUG, "connect appserver success!");
+			break;
         default:
             log(LOG_ERR, "unknow type %d", msg->type);
             break;

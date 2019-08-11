@@ -30,28 +30,53 @@ int main(int argc, char* const argv[])
 {
     pthread_t gu1,gu2,mp,cloud;
 
-    char c=0;
-    while((c = getopt(argc, argv, "gc:p::d")) != -1){
+    getlogger("loraserver");
+
+    char c = 0;
+    int  level = 0;
+
+    while((c = getopt(argc, argv, "gc:l:p::d")) != -1){
         switch(c){
         case 'g':
             log(LOG_NORMAL, "gateway listen at port:%s", argv[optind]);
             gw_port=atoi(argv[optind]);
-            break;
+
+			break;
         case 'c':
             log(LOG_NORMAL, "appserver address:%s", optarg);
+
             if (strlen(optarg)>=sizeof(cloud_ip)) {
                 log(LOG_ERR, "param \"%s\" is too length", optarg);
+
                 return 0;
             }
+
             memset(cloud_ip, 0, sizeof(cloud_ip));
             memcpy(cloud_ip, optarg, strlen(optarg));
+
+            break;
+            
+        case 'l':
+            level = atoi(optarg);
+
+            if (level < 0 || level > LOG_DEBUG) {
+                printf("无效的日志级别：%d，有效值为0~2对应ERROR~DEBUG", level);
+
+                exit(-1);
+            }
+
+            setloggerlevel(level);
+        
             break;
         case 'p':
             log(LOG_NORMAL, "appserver port:%s", optarg);
+
             cloud_port=atoi(optarg);
+
             break;
         case 'd':
             log(LOG_NORMAL, "database name:%s", optarg);
+
             break;
         default: {
             }

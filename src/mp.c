@@ -119,14 +119,14 @@ static int GwId_Param_Cmp(struct hash_node *node, void *key)
 
 void DB_MoteInfoSave(uint64_t deveui, mac_param_t *mp)
 {
-    char *statement=malloc(4096);
-    
+    char *statement=(char *)malloc(4096);
+
     SQL_ROW *dbres=sqlfmt(&db, statement, 4096, "select * from moteinfo where DevEUI=%u", deveui);
 
     char appkey [40]={0};
     char appskey[40]={0};
     char nwkskey[40]={0};
-    
+
     cJSON *freqarry=cJSON_CreateArray();
 
     for (int i=0; i<16; i++) {
@@ -154,20 +154,19 @@ void DB_MoteInfoSave(uint64_t deveui, mac_param_t *mp)
 
     if (dbres!=NULL) { /* update mote information */
         snprintf(statement, 4096, "update moteinfo set Version=%d, DevAddr=%u, AppEUI=%llu,\
-AppKey=\"%s\", Class=%d, AppSKey=\"%s\", NwkSKey=\"%s\", RxDelay=%d, Rx1DrOff=%d,\
-Rx2Dr=%d, Rx2Freq=%u, DutyCycle=%d, FreqType=%d, Freqs=\"%s\" where DevEUI=%llu",
-            mp->version, mp->devaddr, mp->appeui, appkey, mp->lclass, appskey, nwkskey,
-            mp->rxdelay, mp->rx1droffset, mp->rx2dr, mp->rx2freq, mp->dutycycle, mp->freqtype,
-            str, deveui);
+                 "AppKey=\"%s\", Class=%d, AppSKey=\"%s\", NwkSKey=\"%s\", RxDelay=%d, Rx1DrOff=%d,\
+                 "Rx2Dr=%d, Rx2Freq=%u, DutyCycle=%d, FreqType=%d, Freqs=\"%s\", SeqUl=%lu, SeqDl=%lu where DevEUI=%llu",
+                  mp->version, mp->devaddr, mp->appeui, appkey, mp->lclass, appskey, nwkskey,
+                  mp->rxdelay, mp->rx1droffset, mp->rx2dr, mp->rx2freq, mp->dutycycle, mp->freqtype,
+                  str, mp->sequl, mp->seqdl, deveui);
         //sqlfmt(&db, );
     }
     else { /* insert mote information */
         snprintf(statement, 4095, "insert into moteinfo values (%llu, %d, %d, %llu, \"%s\", %d,\
-\"%s\", \"%s\", %d, %d, %d, %u, %d, %d, \"%s\", 0, 0)", deveui, mp->version, mp->devaddr,
-            mp->appeui, appkey, mp->lclass, appskey, nwkskey, mp->rxdelay, mp->rx1droffset, 
-            mp->rx2dr, mp->rx2freq, mp->dutycycle, mp->freqtype, str);
+                 "\"%s\", \"%s\", %d, %d, %d, %u, %d, %d, \"%s\", 0, 0)", deveui, mp->version, mp->devaddr,
+                 mp->appeui, appkey, mp->lclass, appskey, nwkskey, mp->rxdelay, mp->rx1droffset,
+                 mp->rx2dr, mp->rx2freq, mp->dutycycle, mp->freqtype, str);
         //sqlfmt(&db, statement, 4096, ");
-        
     }
 
     log(LOG_DEBUG, statement);
@@ -176,13 +175,13 @@ Rx2Dr=%d, Rx2Freq=%u, DutyCycle=%d, FreqType=%d, Freqs=\"%s\" where DevEUI=%llu"
 
     sqldb_free_rows(dbres);
     cJSON_Delete(freqarry);
-    
+
     free(statement);
 }
 
 bool DB_MoteInfoRead(uint64_t deveui, mac_param_t *mp)
 {
-    char *statement=malloc(4096);
+    char *statement=(char *)malloc(4096);
     SQL_ROW *dbres=sqlfmt(&db, statement, 4096, "select * from moteinfo where DevEUI=%u", deveui);
 
     if (dbres==NULL) {
@@ -190,9 +189,9 @@ bool DB_MoteInfoRead(uint64_t deveui, mac_param_t *mp)
         log(LOG_ERR, "have no mote %llu info", deveui);
         return false;
     }
-    
+
     memset(mp, 0, sizeof(mac_param_t));
-    
+
     mp->version=atoi(get_column(dbres, "Version"));
     mp->devaddr=strtoul(get_column(dbres, "DevAddr"), 0, 0);
     mp->appeui=strtoul(get_column(dbres, "AppEUI"), 0, 0);
@@ -244,8 +243,7 @@ bool DB_MoteInfoRead(uint64_t deveui, mac_param_t *mp)
 
 bool DB_MoteDevEUIRead(uint32_t devaddr, uint64_t *deveui)
 {
-    
-    char *statement=malloc(4096);
+    char *statement=(char *)malloc(4096);
     SQL_ROW *dbres=sqlfmt(&db, statement, 4096, "select DevEUI from moteinfo where DevAddr=%u", devaddr);
 
     if (dbres==NULL) {
@@ -263,11 +261,11 @@ bool DB_MoteDevEUIRead(uint32_t devaddr, uint64_t *deveui)
 
 void DB_GwInfoSave(uint64_t gwid, gw_param_t *gp)
 {
-    char *statement=malloc(1024);
+    char *statement=(char *)malloc(1024);
     SQL_ROW *dbres=sqlfmt(&db, statement, 1024, "select * from gwinfo where GwID=%llu", gwid);
 
     if (dbres!=NULL) { /* update mote information */
-        sqlfmt(&db, statement, 1024, "update GwInfo set Pow=%d where GwID=%llu", gp->powe, gwid);   
+        sqlfmt(&db, statement, 1024, "update GwInfo set Pow=%d where GwID=%llu", gp->powe, gwid);
     }
     else { /* insert mote information */
         sqlfmt(&db, statement, 1024, "insert into GwInfo values (%llu, %d)", gwid, gp->powe);
@@ -279,13 +277,12 @@ void DB_GwInfoSave(uint64_t gwid, gw_param_t *gp)
 
 bool DB_GwInfoRead(uint64_t gwid, gw_param_t *gp)
 {
-    char *statement=malloc(4096);
-    
+    char *statement=(char *)malloc(4096);
     SQL_ROW *dbres=sqlfmt(&db, statement, 4096, "select * from gwinfo where GwID=%llu", gwid);
 
     if (dbres==NULL) { /* update mote information */
         free(statement);
-        return false;   
+        return false;
     }
 
     gp->powe=atoi(get_column(dbres, "Pow"));
@@ -299,15 +296,15 @@ void LoRaMacProcessMacCommands(uint8_t *data, uint8_t size, mac_resp_t *res)
 {
 }
 
-void MP_DBMoteInfoSave(uint64_t deveui, mac_param_t *mp)
+void MP_DBMoteInfoSave(uint64_t deveui, mac_param_t *mp, bool ack)
 {
     struct hash_node *node=hashmap_get(&deveui_seq_map, &deveui);
-    
+
     if (node!=NULL) {
         hash_data_t *hd=container_of(node,hash_data_t,node);
         mote_seq_pre_t *seq_pre=(mote_seq_pre_t *)hd->data;
         int diff=mp->sequl-seq_pre->sequl;
-        if (diff>100 || diff<100) {
+        if (((diff>3 || diff<0) && ack) || diff > 100) {
             seq_pre->sequl=mp->sequl;
             DB_MoteInfoSave(deveui, mp);
         }
@@ -342,17 +339,24 @@ void MP_DBMoteInfoRead(uint64_t deveui)
         seq=(mote_seq_pre_t *)malloc(sizeof(mote_seq_pre_t));
         seq->seqdl=mp->seqdl;
         seq->sequl=mp->sequl;
+
+        if (mp->sequl > 0 && mp->seqdl > 0) {
+            mp->seqdl += 5;
+        }
+
         hash_data_t *hd=(hash_data_t *)malloc(sizeof(hash_data_t));
         hd->data=mp;
         hashmap_insert(&deveui_param_map, &hd->node, &deveui);
         hd=(hash_data_t *)malloc(sizeof(hash_data_t));
         hd->data=seq;
         hashmap_insert(&deveui_seq_map, &hd->node, &deveui);
+
+        log(LOG_DEBUG, "read deveui:%016lX info from database\n", deveui);
     }
     else { /* request to cloud */
         free(mp);
         log(LOG_ERR, "have no mote %llu parameter, please configure mote before", deveui);
-        
+
         sendMoteInfoReq(deveui);
     }
 }
@@ -384,7 +388,7 @@ uint64_t MP_DBMoteInfoRead2(uint32_t devaddr)
 
 void MP_FillMacCommand(uint8_t *p,  mac_dl_t *d)
 {
-    
+
 }
 
 void MP_SendMsg2Cloud(void)
@@ -432,7 +436,7 @@ void MP_InitDlData(gw_pkt_tx_t *tp, gw_pkt_rx_t *rp, mac_param_t *p)
         rxdelay=p->rxdelay==0?2:p->rxdelay+1;
         tp->imme=true;
     }
-    
+
     tp->tmst=rp->tmst+rxdelay*1000000;
     tp->ncrc=true;
     tp->prea=8;
@@ -442,13 +446,13 @@ void MP_InitDlData(gw_pkt_tx_t *tp, gw_pkt_rx_t *rp, mac_param_t *p)
 mac_dl_t *MP_GetDlData(uint64_t deveui)
 {
     struct hash_node *node=hashmap_get(&deveui_data_dl,&deveui);
-    
+
     if (node==NULL) {
         return NULL;
     }
-    
+
     hash_data_t *hd=container_of(node,hash_data_t,node);
-    queue_t *dqueue=hd->data;
+    queue_t *dqueue=(queue_t *)hd->data;
     if (queue_empty(dqueue)) {
         return NULL;
     }
@@ -458,17 +462,20 @@ mac_dl_t *MP_GetDlData(uint64_t deveui)
     return md;
 }
 
-void MP_BuildDlRespData(gw_pkt_tx_t *tp, uint64_t deveui, mac_resp_t *rsp)
+void MP_BuildDlRespData(gw_pkt_tx_t *tp, uint64_t deveui, mac_resp_t *rsp, mac_param_t* mp)
 {
+#if 0
     struct hash_node *node=hashmap_get(&deveui_param_map, &deveui);
-    
+
     if (node==NULL) {
         log(LOG_ERR, "have no mote %llu parameter", deveui);
         return;
     }
-    
+
     hash_data_t *hd=container_of(node,hash_data_t,node);
-    mac_param_t *mp=hd->data;
+    mac_param_t *mp=(mac_param_t *)hd->data;
+#endif
+
     if (mp->lclass==2) { /* class C */
         memcpy(tp->codr, "4/5", strlen("4/5"));
         char *dr=NULL;
@@ -496,7 +503,7 @@ void MP_BuildDlRespData(gw_pkt_tx_t *tp, uint64_t deveui, mac_resp_t *rsp)
                 dr="SF12BW125K";
                 break;
         }
-        
+
         memcpy(tp->datar, dr, strlen(dr));
         tp->freq=mp->rx2freq;
         tp->ipol=true;
@@ -524,19 +531,19 @@ void MP_BuildDlRespData(gw_pkt_tx_t *tp, uint64_t deveui, mac_resp_t *rsp)
     }
 
     uint8_t flen = end + (rsp->size>0 ? 5+rsp->size : 4);
-    
+
     if( flen > 255 ) {
         // Options and payload too big - delay payload
         txdata = 0;
         flen = end+4;
     }
-    
+
     data[0] = rsp->confirm?0xA0:0x60;
     data[5] = (rsp->fctrl.Value&0xF0) | (end-8);
     //*(uint32_t *)&data[1]=mp->devaddr;
     //*(uint16_t *)&data[6]=mp->seqdl++;
     COMM_MSB_W_4(&data[1], htonl(mp->devaddr));
-    COMM_MSB_W_2(&data[6], htons(mp->seqdl++));
+    COMM_MSB_W_2(&data[6], htons(mp->seqdl-1));
 
     if( txdata) {
         data[end] = rsp->port;
@@ -602,7 +609,7 @@ gw_pkt_tx_t* MP_BuildClassCData(mac_param_t *mp, mac_dl_t *md)
     if (md->type==CLOUD_DL_TYPE_CONFIRM) { /* MHDR */
         data[i++]=(5<<5);
     }
-    else 
+    else
         data[i++]=(3<<5);
     *(uint32_t *)&data[i]=mp->devaddr;     /* DevAddr */
     i+=4;
@@ -613,10 +620,10 @@ gw_pkt_tx_t* MP_BuildClassCData(mac_param_t *mp, mac_dl_t *md)
     }
 
     if (md->msize==0)                      /* FCtrl */
-        data[i++]=0;                           
+        data[i++]=0;
     else
         data[i++]=md->msize;
-    
+
     mp->seqdl++;
     *(uint16_t *)&data[i]=mp->seqdl;       /* FCnt */
     i+=2;
@@ -724,7 +731,7 @@ gw_pkt_tx_t* MP_HandleJoinReq(uint64_t gwid, gw_pkt_rx_t *p)
         log(LOG_ERR, "join request length is wrong");
         return NULL;
     }
-    
+
     log(LOG_NORMAL, "join request packet:");
     dump(p->data, p->size);
     uint8_t  version=data[0]&0x03;
@@ -744,23 +751,23 @@ gw_pkt_tx_t* MP_HandleJoinReq(uint64_t gwid, gw_pkt_rx_t *p)
     hash_data_t *hd=container_of(node, hash_data_t, node);
     mac_param_t *mp=(mac_param_t *)hd->data;
     LoRaMacJoinComputeMic(data, 19, mp->appkey, &calc);
-    
+
     if (mic!=calc) {
         log(LOG_ERR, "mote %llu join mic error! AppKey:", deveui);
         dump(mp->appkey, 16);
         sendMoteInfoReq(deveui);
         return NULL;
     }
-    
+
     mp->version=version;
-    
+
     /* build join accept */
     gw_pkt_tx_t *tp=(gw_pkt_tx_t *)malloc(sizeof(gw_pkt_tx_t));
     memset(tp, 0, sizeof(gw_pkt_tx_t));
 
     /* get gateway power parameter */
     tp->powe=20;
-    
+
     data=tp->data;
     int i=0;
     data[i++]=0x20 | (p->data[0]&0x03);            /* MHDR */
@@ -785,27 +792,26 @@ gw_pkt_tx_t* MP_HandleJoinReq(uint64_t gwid, gw_pkt_rx_t *p)
     /* DevAddr */
     *(uint32_t *)&data[i]=devaddr;
     i+=4;
-    
+
     hash_data_t *hp=(hash_data_t *)malloc(sizeof(hash_data_t));
     hp->data=malloc(sizeof(uint64_t));
     *(uint64_t *)hp->data=deveui;
-    
+
     hashmap_insert(&devaddr_deveui_map, &hp->node,  &devaddr);
     mp->devaddr=devaddr;
 
     /* DLSetting */
-    data[i++]=((mp->rx1droffset&0x07)<<4)|(mp->rx2dr&0x0f); 
+    data[i++]=((mp->rx1droffset&0x07)<<4)|(mp->rx2dr&0x0f);
      /* rx1delay */
     data[i++]=mp->rxdelay;
     /* CFList */
     i+=MP_FillCflist(&data[i], mp);
     /* MIC */
-    LoRaMacJoinComputeMic(data, i, mp->appkey, (uint32_t *)&data[i]); 
+    LoRaMacJoinComputeMic(data, i, mp->appkey, (uint32_t *)&data[i]);
     i+=4;
 
     tp->data[0]=data[0];
 
-    
     /* generate appskey&nwkskey */
     LoRaMacJoinComputeSKeys(mp->appkey, data+1, devnonce, mp->nwkskey, mp->appskey);
     /* Encrypt */
@@ -834,12 +840,11 @@ gw_pkt_tx_t* MP_HandleJoinReq(uint64_t gwid, gw_pkt_rx_t *p)
         hd=container_of(node,hash_data_t,node);
         memset(hd->data, 0, sizeof(mote_seq_pre_t));
     }
-    
+
     /* update database */
     DB_MoteInfoSave(deveui, mp);
 
     /* update join state to cloud */
-    
 
     return tp;
 }
@@ -858,7 +863,6 @@ gw_pkt_tx_t* MP_HandleData(uint64_t gwid, gw_pkt_rx_t *rp)
     log(LOG_DEBUG, "size:%u", rp->size);
     //dump(rp, sizeof(gw_pkt_rx_t));
 
-    
     uint32_t address = *(uint32_t *)&payload[pktHeaderLen];
     pktHeaderLen+=4;
 
@@ -866,6 +870,7 @@ gw_pkt_tx_t* MP_HandleData(uint64_t gwid, gw_pkt_rx_t *rp)
     struct hash_node *node=hashmap_get(&devaddr_deveui_map, &address);
     if (node==NULL) {
         deveui=MP_DBMoteInfoRead2(address);
+        log(LOG_ERR, "read devaddr %04X info, deveui:%016lX\n", address, deveui);
     }
     else {
         hd=container_of(node,hash_data_t,node);
@@ -884,7 +889,7 @@ gw_pkt_tx_t* MP_HandleData(uint64_t gwid, gw_pkt_rx_t *rp)
 
     LoRaMacFrameCtrl_t fCtrl;
     fCtrl.Value = payload[pktHeaderLen++];
-    
+
     uint16_t sequenceCounter = payload[pktHeaderLen++];
     sequenceCounter |= payload[pktHeaderLen++] << 8;
 
@@ -900,9 +905,9 @@ gw_pkt_tx_t* MP_HandleData(uint64_t gwid, gw_pkt_rx_t *rp)
     if( sequence < 0 )
     {
         // sequence reset or roll over happened
-        
+
         sequl = ( mp->sequl & 0xFFFF0000 ) | ( sequenceCounter + ( uint32_t )0x10000 );
-        
+
         LoRaMacComputeMic( payload, rp->size- 4, mp->nwkskey, address, 0, sequl, &mic );
         if( micRx == mic )
         {
@@ -923,17 +928,23 @@ gw_pkt_tx_t* MP_HandleData(uint64_t gwid, gw_pkt_rx_t *rp)
         log(LOG_ERR, "size:%u, address:%u, sequl:%u", rp->size, address, sequl);
         dump(mp->nwkskey, 16);
         dump(payload, rp->size);
-        
+
         return NULL;
     }
-    
-    mp->sequl=sequl;
 
     if(payload[0]>>5 == 4) /* confirm packet */
     {
         ack = true;
+        if (mp->sequl!=sequl) {
+            mp->seqdl++;
+        }
+        else if (sequl == 0) {
+            mp->seqdl++;
+        }
     }
-    
+
+    mp->sequl=sequl;
+
     // Check if the frame is an acknowledgement
     if( fCtrl.Bits.Ack == 1 )
     {
@@ -943,7 +954,7 @@ gw_pkt_tx_t* MP_HandleData(uint64_t gwid, gw_pkt_rx_t *rp)
     {
         /* check if timeout */
     }
-    
+
     if( fCtrl.Bits.FOptsLen > 0 )
     {
         // Decode Options field MAC commands
@@ -960,7 +971,7 @@ gw_pkt_tx_t* MP_HandleData(uint64_t gwid, gw_pkt_rx_t *rp)
     {
         port = payload[appPayloadStartIndex++];
         uint8_t frameLen = ( rp->size - 4 ) - appPayloadStartIndex;
-        
+
         if( port == 0 )
         {
             LoRaMacPayloadDecrypt( payload + appPayloadStartIndex,
@@ -970,9 +981,9 @@ gw_pkt_tx_t* MP_HandleData(uint64_t gwid, gw_pkt_rx_t *rp)
                                    0,
                                    sequl,
                                    payload);
-            
+
             // Decode frame payload MAC commands
-            LoRaMacProcessMacCommands( payload, 0, frameLen );
+            LoRaMacProcessMacCommands( payload, 0, &mresp );
         }
         else
         {
@@ -992,7 +1003,7 @@ gw_pkt_tx_t* MP_HandleData(uint64_t gwid, gw_pkt_rx_t *rp)
             memset(tp, 0, sizeof(gw_pkt_tx_t));
             MP_InitDlData(tp, rp, mp);
         }
-        
+
         mresp.fctrl.Bits.Ack=1;
     }
 
@@ -1013,11 +1024,11 @@ gw_pkt_tx_t* MP_HandleData(uint64_t gwid, gw_pkt_rx_t *rp)
 
     if (tp!=NULL) {
         MP_InitDlData(tp,rp,mp);
-        MP_BuildDlRespData(tp, deveui, &mresp);
+        MP_BuildDlRespData(tp, deveui, &mresp, mp);
     }
 
     /* save info to database */
-    MP_DBMoteInfoSave(deveui, mp);
+    MP_DBMoteInfoSave(deveui, mp, ack);
 
     /* send to cloud */
     cloud_msg_ul_t *cmsg=(cloud_msg_ul_t *)malloc(sizeof(cloud_msg_ul_t));
@@ -1045,7 +1056,7 @@ gw_pkt_tx_t* MP_HandleData(uint64_t gwid, gw_pkt_rx_t *rp)
 
     log(LOG_NORMAL, "push lora data packet to cloud thread");
     queue_put(cloud_ul_queue,cmsg);
-    
+
     return tp;
 }
 
@@ -1077,23 +1088,23 @@ gw_pkt_tx_t *MP_HandleLoraPkt(uint64_t gwid, gw_pkt_rx_t *rp)
         }
         else {
             hash_data_t *hd=container_of(node,hash_data_t,node);
-            gw_param_t *gp=hd->data;
+            gw_param_t *gp=(gw_param_t *)hd->data;
             tp->powe=gp->powe;
         }
     }
-    
+
     return tp;
 }
 
 void MP_HandleGuMsg(gw_msg_t *msg)
 {
-    gw_pkt_tx_t *tp=MP_HandleLoraPkt(msg->gwid, msg->msg);
-    
+    gw_pkt_tx_t *tp=MP_HandleLoraPkt(msg->gwid, (gw_pkt_rx_t*)msg->msg);
+
     if (tp==NULL) {
         log(LOG_DEBUG, "no downlink packet");
         return;
     }
-    
+
     gw_msg_t *res=(gw_msg_t *)malloc(sizeof(gw_msg_t));
     memcpy(res, msg, sizeof(gw_msg_t));
     res->msg=tp;
@@ -1104,19 +1115,19 @@ void MP_HandleGuMsg(gw_msg_t *msg)
 
 void MP_HandleCloudMoteInfo(mp_msg_t *msg)
 {
-    cloud_modu_param_t *p=msg->msg;
+    cloud_modu_param_t *p=(cloud_modu_param_t *)msg->msg;
     mac_param_t *mp=NULL;
-    
+
     /* save to hash map */
     struct hash_node *node=hashmap_get(&deveui_param_map, &p->deveui);
-    
+
     if (node==NULL) {
         mp=(mac_param_t *)malloc(sizeof(mac_param_t));
-        
+
         memcpy(mp, &p->param, sizeof(mac_param_t));
-        
+
         hash_data_t *hd=(hash_data_t *)malloc(sizeof(hash_data_t));
-        
+
         hd->data=mp;
         hashmap_insert(&deveui_param_map, &hd->node, &p->deveui);
         log(LOG_NORMAL, "insert mote %llu param to hash map", p->deveui);
@@ -1124,21 +1135,21 @@ void MP_HandleCloudMoteInfo(mp_msg_t *msg)
     else {
         hash_data_t *hd=container_of(node,hash_data_t,node);
         mp=(mac_param_t *)hd->data;
-        
+
         /* remain mac frame seq and devaddr, change other param */
         mp->version=p->param.version;
         mp->appeui=p->param.appeui;
         memcpy(mp->appkey, p->param.appkey, 16);
         mp->lclass=p->param.lclass;
         mp->active=p->param.active;
-        
+
         if (p->param.active>0) {
             memcpy(mp->appskey, p->param.appskey, 16);
             memcpy(mp->nwkskey, p->param.nwkskey, 16);
             mp->sequl=p->param.sequl;
             mp->seqdl=p->param.seqdl;
         }
-        
+
         mp->rxdelay=p->param.rxdelay;
         mp->rx1droffset=p->param.rx1droffset;
         mp->rx2dr=p->param.rx2dr;
@@ -1146,7 +1157,7 @@ void MP_HandleCloudMoteInfo(mp_msg_t *msg)
         mp->dutycycle=p->param.dutycycle;
         mp->freqtype=p->param.freqtype;
         mp->freqnum=p->param.freqnum;
-        
+
         memcpy(mp->freq, p->param.freq, sizeof(p->param.freq));
         memcpy(mp->dlfreq, p->param.dlfreq, sizeof(p->param.freq));
     }
@@ -1157,7 +1168,7 @@ void MP_HandleCloudMoteInfo(mp_msg_t *msg)
 
 void MP_HandleCloudMoteData(mp_msg_t *msg)
 {
-    cloud_modu_dl_t *d=msg->msg;
+    cloud_modu_dl_t *d=(cloud_modu_dl_t *)msg->msg;
     mac_dl_t *dd=(mac_dl_t *)malloc(sizeof(mac_dl_t));
     memcpy(dd, &d->dldata, sizeof(mac_dl_t));
 
@@ -1167,14 +1178,14 @@ void MP_HandleCloudMoteData(mp_msg_t *msg)
         log(LOG_ERR, "must configure mote %llu before!", d->deveui);
         return;
     }
-    
+
     hash_data_t *hd=container_of(node,hash_data_t,node);
-    mac_param_t *mp=hd->data;
-    
+    mac_param_t *mp=(mac_param_t *)hd->data;
+
     if (mp->lclass !=2) {
         /* save to hash map */
         queue_t *dqueue=NULL;
-        
+
         if (hashmap_get(&deveui_data_dl, &d->deveui)==NULL) {
             dqueue=queue_create();
             hash_data_t *hd=(hash_data_t *)malloc(sizeof(hash_data_t));
@@ -1185,34 +1196,32 @@ void MP_HandleCloudMoteData(mp_msg_t *msg)
         if (dqueue==NULL) {
             struct hash_node *node=hashmap_get(&deveui_data_dl, &d->deveui);
             hash_data_t *hd=container_of(node,hash_data_t,node);
-            dqueue=hd->data;
+            dqueue=(queue_t*)hd->data;
         }
 
         /* save to downlink queue */
         queue_put(dqueue, dd);
-        
+
         return;
     }
 
     /* Send immediately for Class C */
     gw_pkt_tx_t *tp=MP_BuildClassCData(mp, dd);
     gw_msg_t *gm=(gw_msg_t *)malloc(sizeof(gw_msg_t));
-    
+
     gm->msg=tp;
     log(LOG_NORMAL, "insert mote %llu data to queue", d->deveui);
-    
+
     /* send to gu thread */
     queue_put(gu_dl_queue,gm);
 }
 
 void MP_HandleCloudGwInfo(mp_msg_t *msg)
 {
-    cloud_gw_param_t *p=msg->msg;
+    cloud_gw_param_t *p=(cloud_gw_param_t *)msg->msg;
 
     gw_param_t *gp=(gw_param_t *)malloc(sizeof(gw_param_t));
     gp->powe=p->param.powe;
-
-    
 }
 
 void MP_HandleCloudMsg(mp_msg_t *msg)
@@ -1248,12 +1257,12 @@ void *MP_Task(void *arg)
 
     while(true) {
         bool empty=true;
-        
+
         if (!queue_empty(lora_hanle_queue)) {
             gw_msg_t *msg;
-            
-            queue_get(lora_hanle_queue, &msg);
-            
+
+            queue_get(lora_hanle_queue, (void**)&msg);
+
             if (msg!=NULL) {
                 MP_HandleGuMsg(msg);
                 free(msg->msg);
@@ -1262,24 +1271,24 @@ void *MP_Task(void *arg)
             else {
                 log(LOG_ERR, "lora handle queue is empty");
             }
-            
+
             empty=false;
         }
-        
+
         if (!queue_empty(mp_dl_queue)) {
             mp_msg_t *msg=NULL;
-            
-            queue_get(mp_dl_queue, &msg);
-            
+
+            queue_get(mp_dl_queue, (void**)&msg);
+
             if (msg!=NULL) {
                 MP_HandleCloudMsg(msg);
                 free(msg->msg);
                 free(msg);
             }
-            
+
             empty=false;
         }
-        
+
         if (empty==false)
             usleep(10);
         else

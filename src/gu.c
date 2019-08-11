@@ -218,8 +218,12 @@ int GU_ParseGwStat(gw_stat_t *stat, cJSON *pos)
 
 void GU_HandlePush(gw_msg_json_t *jmsg)
 {
+    struct sockaddr_in sin;
     gw_msg_t *msg;
     gw_dl_head_t *head=NULL;
+    cloud_msg_ul_t *msg2c = NULL;
+    gw_stat_t *stat=NULL;
+    cJSON *jstat=NULL;
     cJSON *pkts=cJSON_GetObjectItem(jmsg->msg, "rxpkt");
 
     if (pkts!=NULL) {
@@ -254,8 +258,8 @@ void GU_HandlePush(gw_msg_json_t *jmsg)
         goto pushacktogw;
     }
     
-    gw_stat_t *stat=(gw_stat_t *)malloc(sizeof(gw_stat_t));
-    cJSON *jstat=cJSON_GetObjectItem(jmsg->msg, "stat");
+    stat=(gw_stat_t *)malloc(sizeof(gw_stat_t));
+    jstat=cJSON_GetObjectItem(jmsg->msg, "stat");
 
     if (stat==NULL) {
         goto pushacktogw;
@@ -269,7 +273,7 @@ void GU_HandlePush(gw_msg_json_t *jmsg)
     }
 
     /* push gw state to appserver */
-    cloud_msg_ul_t *msg2c=(cloud_msg_ul_t *)malloc(sizeof(cloud_msg_ul_t));
+    msg2c=(cloud_msg_ul_t *)malloc(sizeof(cloud_msg_ul_t));
     msg=(gw_msg_t *)malloc(sizeof(gw_msg_t));
     msg->gwaddr=jmsg->gwaddr;
     msg->type=jmsg->type;
@@ -287,7 +291,7 @@ pushacktogw:
     head->tokenh=jmsg->tokenh;
     head->tokenl=jmsg->tokenl;
     /* send to gw */
-    struct sockaddr_in sin;
+    
      memcpy(&sin, &jmsg->gwaddr, sizeof(sin));
     log(LOG_NORMAL, "response no packet ack to addr %s:%d %p", inet_ntoa(sin.sin_addr), sin.sin_port, &jmsg->gwaddr);
     sendto(sockfd, head, GW_DL_MSG_HEAD_SIZE, 0, &jmsg->gwaddr, sizeof(struct sockaddr));
@@ -299,27 +303,32 @@ void GU_HandlePull(gw_msg_json_t *jmsg)
     struct hash_node *node=hashmap_get(&gw_dl_map, &jmsg->gwid);
 
     gw_dl_head_t *head=NULL;
-    
+    hash_data_t *hd=NULL;
+    queue_t *q=NULL;
+    cJSON *jresp=NULL;
+    cJSON *jpkts=NULL;
+    char *str=NULL;
+
     if (node==NULL) {
-        log(LOG_ERR, "gw %llu pull packet failed, no queue", jmsg->gwid);
+        log(LOG_DEBUG, "gw %llu pull packet failed, no queue", jmsg->gwid);
         goto pullacktogw;
     }
     
-    hash_data_t *hd=container_of(node, hash_data_t, node);
-    queue_t *q=hd->data;
+    hd=container_of(node, hash_data_t, node);
+    q=(queue_t *)hd->data;
 
     if (queue_empty(q)) {
-        log(LOG_ERR, "gw %llu pull packet failed, queue empty", jmsg->gwid);
+        log(LOG_DEBUG, "gw %llu pull packet failed, queue empty", jmsg->gwid);
         goto pullacktogw;
     }
     
-    cJSON *jresp=cJSON_CreateObject();
-    cJSON *jpkts=cJSON_CreateArray();
+    jresp=cJSON_CreateObject();
+    jpkts=cJSON_CreateArray();
 
     while(!queue_empty(q)) {
         gw_msg_t *msg=NULL;
         queue_get(q, (void **)&msg);
-        gw_pkt_tx_t *tp=msg->msg;
+        gw_pkt_tx_t *tp=(gw_pkt_tx_t *)msg->msg;
 
         log(LOG_DEBUG, "process tx pkt %p", tp);
         
@@ -351,7 +360,7 @@ void GU_HandlePull(gw_msg_json_t *jmsg)
 
     cJSON_AddItemToObject(jresp,"txpkt",jpkts);
 
-    char *str= cJSON_Print(jresp);
+    str= cJSON_Print(jresp);
 
     log(LOG_DEBUG, "tx pkt: \n%s", str);
 
@@ -393,7 +402,7 @@ pullacktogw:
     /* send to gw */
     struct sockaddr_in sin;
        memcpy(&sin, &jmsg->gwaddr, sizeof(sin));
-    log(LOG_NORMAL, "response no packet ack to addr %s:%d %p", inet_ntoa(sin.sin_addr), sin.sin_port, &jmsg->gwaddr);
+    log(LOG_DEBUG, "response no packet ack to addr %s:%d %p", inet_ntoa(sin.sin_addr), sin.sin_port, &jmsg->gwaddr);
     sendto(sockfd, head, GW_DL_MSG_HEAD_SIZE, 0, &jmsg->gwaddr, sizeof(struct sockaddr));
     free(head);
 }
@@ -457,7 +466,7 @@ void *GU_ThreadDl(void *arg)
         else {
             struct hash_node *node=hashmap_get(&gw_dl_map, &msg->gwid);
             hash_data_t *hd=container_of(node,hash_data_t,node);
-            dlqueue=hd->data;
+            dlqueue=(queue_t*)hd->data;
         }
         
         log(LOG_NORMAL, "save gw %llu donwlink packet to queue", msg->gwid);
